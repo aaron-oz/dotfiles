@@ -753,6 +753,10 @@ text and copying to the killring."
 (use-package counsel
   :straight t)
 
+(use-package smex
+  ;; counsel will auto-use smex IF it's installed. so make sure it is!
+  :straight t)
+
 (use-package swiper
   :straight t)
 
