@@ -138,32 +138,33 @@
 ;; https://stackoverflow.com/questions/17659212/dont-display-compilation-buffer-in-emacs-until-the-process-exits-with-error-o/17788551#17788551
 ;; added bc auctex compilation buffer always popping up (and not
 ;; leaving automatically) was annoying
-(defun my-compile-finish (buffer outstr)
-  (unless (string-match "finished" outstr)
-    (switch-to-buffer-other-window buffer))
-  t)
-
-(setq compilation-finish-functions 'my-compile-finish)
-
-(require 'cl)
-
-(defadvice compilation-start
-  (around inhibit-display
-      (command &optional mode name-function highlight-regexp))
-  (if (not (string-match "^\\(find\\|grep\\)" command))
-      (flet ((display-buffer)
-         (set-window-point)
-         (goto-char))
-    (fset 'display-buffer 'ignore)
-    (fset 'goto-char 'ignore)
-    (fset 'set-window-point 'ignore)
-    (save-window-excursion
+(use-package cl
+  :straight t)
+(use-package noflet
+  :straight t
+  :config
+  (defun my-compile-finish (buffer outstr)
+    (unless (string-match "finished" outstr)
+      (switch-to-buffer-other-window buffer))
+    t)
+  (setq compilation-finish-functions 'my-compile-finish)
+  (defadvice compilation-start
+      (around inhibit-display
+	      (command &optional mode name-function highlight-regexp))
+    (if (not (string-match "^\\(find\\|grep\\)" command))
+	(flet ((display-buffer) ;; aoz - changed on 2020aug19 due to flet deprecation
+	;;(noflet ((display-buffer ())  ;; aoz - changed on 2020aug19 due to flet deprecation
+		 (set-window-point)
+		 (goto-char))
+   (fset 'display-buffer 'ignore)
+   (fset 'goto-char 'ignore)
+   (fset 'set-window-point 'ignore)
+   (save-window-excursion
+     ad-do-it))
       ad-do-it))
-    ad-do-it))
 
-(ad-activate 'compilation-start)
-
-
+  (ad-activate 'compilation-start)
+  )
 
 ;;;;;;;;
 ;; UX ;;
@@ -295,7 +296,7 @@
 ;; R editting ;;
 ;;;;;;;;;;;;;;;;
 ;; Set default R version, (i.e. the one launched by typing M-x R <RET>)
-(setq inferior-R-program-name "/usr/bin/R")
+(setq inferior-R-program-name "/usr/local/bin/R")
 
 (use-package ess
   :straight t
@@ -583,15 +584,15 @@ Version 2018-04-02T14:38:04-07:00"
   ;; and can be linked to other files specified in: ~/.emacs.d/.org-id-locations
   ;; then set a shortcut to copy the id of the header the cursor is on
 
-  ;; (defun my/org-add-ids-to-headlines-in-file ()
-  ;;   "Add ID properties to all headlines in the current file which
-  ;; do not already have one."
-  ;;   (interactive)
-  ;;   (org-map-entries 'org-id-get-create))
+  (defun my/org-add-ids-to-headlines-in-file ()
+    "Add ID properties to all headlines in the current file which
+  do not already have one."
+    (interactive)
+    (org-map-entries 'org-id-get-create))
 
-  ;; (add-hook 'org-mode-hook
-  ;;           (lambda ()
-  ;;             (add-hook 'before-save-hook 'my/org-add-ids-to-headlines-in-file nil 'local)))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (add-hook 'before-save-hook 'my/org-add-ids-to-headlines-in-file nil 'local)))
 
   ;; copy id of headline
   (defun my/copy-id-to-clipboard()
@@ -743,9 +744,9 @@ text and copying to the killring."
   (global-set-key (kbd "C-c o") 'origami-toggle-node)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ivy, swiper, counsel ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ivy, swiper, counsel, and associated pkgs ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; from https://sam217pa.github.io/2016/09/13/from-helm-to-ivy/
 ;; and https://truthseekers.io/lessons/how-to-use-ivy-swiper-counsel-in-emacs-for-noobs/
@@ -755,6 +756,10 @@ text and copying to the killring."
 
 (use-package smex
   ;; counsel will auto-use smex IF it's installed. so make sure it is!
+  :straight t)
+
+(use-package avy
+  ;; ivy can auto-use avy IF it's installed. so make sure it is!
   :straight t)
 
 (use-package swiper
@@ -881,6 +886,17 @@ text and copying to the killring."
 ;; appearance ;;
 ;;;;;;;;;;;;;;;;
 
+(use-package all-the-icons-dired
+  :straight t)
+
+;; for gnus buffers
+(use-package all-the-icons-gnus
+  :straight t
+  :defer t
+  :config
+  (all-the-icons-gnus-setup)
+  )
+
 ;; all the icons
 (use-package all-the-icons
   :straight t
@@ -893,15 +909,6 @@ text and copying to the killring."
   ;; for neotre, see the neotree section
   ;; for ivy, see the ivy section
   )
-
-;; for gnus buffers
-(use-package all-the-icons-gnus
-  :straight t
-  :defer t
-  :config
-  (all-the-icons-gnus-setup)
-  )
-
 
 ;; Set transparency of selected and unselected frames
 ;;(set-frame-parameter (selected-frame) 'alpha '(<active> . <inactive>))
