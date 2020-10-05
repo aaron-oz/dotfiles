@@ -1,5 +1,11 @@
 ;; whyfarer's homey emacs setup
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; personal vars and key maps ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defconst writing-modes '(org-mode markdown-mode auctex-mode))
+(defconst indent-sensitive-modes '(python-mode yaml-mode))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; initialize straight, use-package ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -44,6 +50,8 @@
 
 ;; fast commenting/uncommenting
 (global-set-key (kbd "M-\-") 'comment-dwim)
+;; comment one line
+(global-set-key (kbd "C-M-;") 'comment-line)
 
 ;; set replace-string keyboard binding
 (global-set-key (kbd "M-r") 'replace-string)
@@ -130,8 +138,11 @@
 ;; https://github.com/justbur/emacs-which-key
 (use-package which-key
   :diminish which-key-mode
+  :custom
+  (which-key-idle-delay 0.5)
   :config
-  (which-key-mode +1))
+  (which-key-mode +1)
+  )
 
 ;;;;;;;;
 ;; UX ;;
@@ -151,6 +162,88 @@
 ;; show cursor position within line in modeline
 (column-number-mode 1)
 
+;; https://github.com/aspiers/smooth-scrolling/
+(use-package smooth-scrolling
+  :diminish smooth-scrolling-mode
+  :config
+  (smooth-scrolling-mode 1))
+
+
+;; https://github.com/rakanalh/emacs-dashboard
+(use-package dashboard
+  :config
+  (dashboard-setup-startup-hook)
+  (setq dashboard-startup-banner 'official)
+  (setq dashboard-center-content nil)
+  (setq dashboard-set-navigator nil)
+  ;; (setq dashboard-set-footer nil) ;;turn off random footnote
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (add-to-list 'dashboard-items '(agenda) t) ;; displays today agenda items
+  ;; (setq show-week-agenda-p t) ;; display agenda for the next 7 days
+  (setq dashboard-items '(;; (recents  . 5)
+                          ;; (bookmarks . 5)
+                          ;; (projects . 5)
+			  (agenda . 5) ;; list-size is ignored for agenda
+			  )))
+
+(use-package darkroom
+  :hook
+  (writing-modes . darkroom-tentative-mode))
+
+(use-package page-break-lines
+  :config (global-page-break-lines-mode))
+;; insert page break with: C-q C-l
+
+
+(use-package beacon
+  :custom
+  (beacon-blink-when-focused t)
+  (beacon-blink-when-window-changes t)
+  (beacon-blink-when-window-scrolls nil)
+  :config
+  ;; (defun maybe-recenter-current-window ()
+  ;;   (when (and (equal (current-buffer) (window-buffer (selected-window)))
+  ;;              (not (eq recenter-last-op 'middle)))
+  ;;     (recenter-top-bottom)))
+  ;; (add-hook 'beacon-before-blink-hook #'maybe-recenter-current-window)
+  ;; (dolist (mode '(comint-mode term-mode))
+  ;;   (push mode beacon-dont-blink-major-modes))
+  (beacon-mode 1))
+
+(use-package volatile-highlights
+  :config
+  (volatile-highlights-mode))
+
+(use-package highlight-indentation
+  :hook
+  (indent-sensitive-modes . highlight-indentation-current-column-mode))
+
+;; modeline appearance
+(use-package moody
+  :custom
+  (moody-slant-function #'moody-slant-apple-rgb)
+  (x-underline-at-descent-line t)
+  :config
+  (moody-replace-mode-line-buffer-identification)
+  (moody-replace-vc-mode))
+
+;; make interactive list for minor modes (instead of wide format)
+(use-package minions
+  :config (minions-mode))
+
+;; dim non-active buffers
+(use-package dimmer
+  :custom
+  (dimmer-exclusion-regexp (rx (or "posframe" "which-key")))
+  :init
+  (dimmer-configure-org)
+  (dimmer-configure-magit)
+  :custom
+  (dimmer-fraction 0.25)
+  :config
+  (dimmer-mode t)
+  )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; basic editting  niceties ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,7 +264,7 @@
 (use-package elec-pair
   :init (electric-pair-mode))
 
-;; since electris-pair is a global minor mode, it's always active and
+;; since electric-pair is a global minor mode, it's always active and
 ;; this can cause problems with other modes (e.g. autocomplete of
 ;; \letf( in auxtex).
 ;; so, from here:
@@ -195,6 +288,24 @@
 	((looking-at "\\s)") (forward-char 1) (backward-list 1))
 	(t (self-insert-command (or arg 1)))))
 
+(use-package flyspell
+  :hook
+  (writing-modes . flyspell-mode))
+
+;; setup hippie expand for better expansion/autocompletion of things
+;; you've already typed (used in place of dabbrev)
+(setq hippie-expand-try-functions-list '(try-expand-dabbrev
+					 try-expand-dabbrev-all-buffers
+					 try-expand-dabbrev-from-kill
+					 try-complete-file-name-partially
+					 try-complete-file-name
+					 try-expand-all-abbrevs
+					 try-expand-list
+					 try-expand-line
+					 try-complete-lisp-symbol-partially
+					 try-complete-lisp-symbol))
+(global-set-key (kbd "M-/") #'hippie-expand)
+
 ;; setup TODO highlighting
 ;; https://github.com/tarsius/hl-todo
 (use-package hl-todo
@@ -210,7 +321,8 @@
   (define-key hl-todo-mode-map (kbd "C-c p") 'hl-todo-previous)
   (define-key hl-todo-mode-map (kbd "C-c n") 'hl-todo-next)
   (define-key hl-todo-mode-map (kbd "C-c o") 'hl-todo-occur)
-  (define-key hl-todo-mode-map (kbd "C-c i") 'hl-todo-insert))
+  (define-key hl-todo-mode-map (kbd "C-c i") 'hl-todo-insert)
+  )
 
 ;; multiple-cursors!
 (use-package multiple-cursors
@@ -251,76 +363,6 @@
 
 ;; show matching paren line/position in modeline
 ;; TODO
-
-;;;;;;;;;;;;;;;;
-;; R editting ;;
-;;;;;;;;;;;;;;;;
-;; Set default R version, (i.e. the one launched by typing M-x R <RET>)
-(setq inferior-R-program-name "/usr/bin/R")
-
-(use-package ess
-  :straight t
-  :defer t
-  :init
-  :config
-  (require 'ess-site)
-  ;; use ; to insert <-. hit ;; to get ;
-  (define-key ess-r-mode-map ";" #'ess-insert-assign)
-  (define-key inferior-ess-r-mode-map ";" #'ess-insert-assign)
-  ;; use RStudio styling
-  (setq ess-style 'RStudio)
-  ;; avoid continued indenting (esp in ggplot)
-  (add-hook 'ess-mode-hook (lambda ()
-			     (setq ess-first-continued-statement-offset 2)))
-  ;; set indenting depth to 2 (defaults to 4)
-  (add-hook 'ess-mode-hook
-	    (lambda()
-	      ;; don't indent comments
-	      (setq ess-indent-with-fancy-comments nil)
-	      ;; turn on outline mode
-	      (setq-local outline-regexp "[# ]+")
-	      (outline-minor-mode t)))
-  ;; fix indenting with only 1 # (it defaults to space 40!))
-  (defun myindent-ess-hook ()
-    (setq ess-indent-level 2))
-  :hook (ess-mode . myindent-ess-hook))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; general code editting ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; turn on good spacing around operators
-;; https://github.com/davidshepherd7/electric-operator
-(use-package electric-operator
-  :straight t
-  :defer t
-  :config
-  ;; no electric op spacing around = in function calls
-  (setq electric-operator-R-named-argument-style 'unspaced)
-  (add-hook 'ess-mode-hook #'electric-operator-mode)
-  (add-hook 'inferior-ess-mode-hook #'electric-operator-mode)
-  (electric-operator-add-rules-for-mode 'ess-r-mode
-                                        (cons ":=" " := ")
-                                        (cons "%" nil)
-                                        (cons "%in%" " %in% ") ;; only works after you hit final space
-                                        (cons "%%" " %% ")        ;; then it adds the first space
-                                        (cons "!=" " != ")
-                                        (cons "<=" " <= ")
-                                        (cons ">=" " >= ")
-                                        (cons "~" " ~ ")
-                                        (cons ";" "; "))
-  (electric-operator-add-rules-for-mode 'inferior-ess-r-mode
-                                        (cons ":=" " := ")
-                                        (cons "==" " == ")
-                                        (cons "=" " = ")
-                                        (cons "%" nil)
-                                        (cons "%in%" " %in% ") ;; only works after you hit final space
-                                        (cons "%%" " %% ")        ;; then it adds the first space
-                                        (cons "!=" " != ")
-                                        (cons "<=" " <= ")
-                                        (cons ">=" " >= ")
-                                        (cons ";" "; ")
-                                        (cons "," ", ")))
 
 ;; one command to shrink whitespace ;;
 (defun xah-delete-blank-lines ()
@@ -395,6 +437,87 @@ Version 2018-04-02T14:38:04-07:00"
           (message "nothing done. logic error 40873. shouldn't reach here" ))))))
 (global-set-key (kbd "C-c s") 'xah-shrink-whitespaces) ; Ctrl+c s
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; multi-language package editting ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; mostly with settings for R (but that's just for now)
+
+;; turn on good spacing around operators
+;; https://github.com/davidshepherd7/electric-operator
+(use-package electric-operator
+  :straight t
+  :defer t
+  :config
+  ;; no electric op spacing around = in function calls
+  (setq electric-operator-R-named-argument-style 'unspaced)
+  (add-hook 'ess-mode-hook #'electric-operator-mode)
+  (add-hook 'inferior-ess-mode-hook #'electric-operator-mode)
+  (electric-operator-add-rules-for-mode 'ess-r-mode
+                                        (cons ":=" " := ")
+                                        (cons "%" nil)
+                                        (cons "%in%" " %in% ") ;; only works after you hit final space
+                                        (cons "%%" " %% ")        ;; then it adds the first space
+                                        (cons "!=" " != ")
+                                        (cons "<=" " <= ")
+                                        (cons ">=" " >= ")
+                                        (cons "~" " ~ ")
+                                        (cons ";" "; "))
+  (electric-operator-add-rules-for-mode 'inferior-ess-r-mode
+                                        (cons ":=" " := ")
+                                        (cons "==" " == ")
+                                        (cons "=" " = ")
+                                        (cons "%" nil)
+                                        (cons "%in%" " %in% ") ;; only works after you hit final space
+                                        (cons "%%" " %% ")        ;; then it adds the first space
+                                        (cons "!=" " != ")
+                                        (cons "<=" " <= ")
+                                        (cons ">=" " >= ")
+                                        (cons ";" "; ")
+                                        (cons "," ", ")))
+
+;; https://github.com/Malabarba/aggressive-indent-mode
+(use-package aggressive-indent
+  ;; :ensure t
+  :config
+  (add-hook 'ess-mode-hook #'aggressive-indent-mode)
+  (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+  (aggressive-indent-mode 1)
+  )
+
+;;;;;;;;;;;;;;;;
+;; R editting ;;
+;;;;;;;;;;;;;;;;
+;; Set default R version, (i.e. the one launched by typing M-x R <RET>)
+(setq inferior-R-program-name "/usr/bin/R")
+
+(use-package ess
+  :straight t
+  :defer t
+  :init
+  :config
+  (require 'ess-site)
+  ;; use ; to insert <-. hit ;; to get ;
+  (define-key ess-r-mode-map ";" #'ess-insert-assign)
+  (define-key inferior-ess-r-mode-map ";" #'ess-insert-assign)
+  ;; use RStudio styling
+  (setq ess-style 'RStudio)
+  ;; avoid continued indenting (esp in ggplot)
+  (add-hook 'ess-mode-hook (lambda ()
+			     (setq ess-first-continued-statement-offset 2)))
+  ;; set indenting depth to 2 (defaults to 4)
+  (add-hook 'ess-mode-hook
+	    (lambda()
+	      ;; don't indent comments
+	      (setq ess-indent-with-fancy-comments nil)
+	      ;; turn on outline mode
+	      (setq-local outline-regexp "[# ]+")
+	      (outline-minor-mode t)))
+  ;; fix indenting with only 1 # (it defaults to space 40!))
+  (defun myindent-ess-hook ()
+    (setq ess-indent-level 2))
+  :hook (ess-mode . myindent-ess-hook))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;~~~~~~~~~~~~~~~~~~~~;;
 ;; settings for magit ;;
@@ -410,6 +533,12 @@ Version 2018-04-02T14:38:04-07:00"
   (global-set-key (kbd "C-x M-g") 'magit-dispatch) ;; magit prefix/help from non-magit buffers/files
   (global-set-key (kbd "C-x M-g") 'magit-dispatch) ;; https://magit.vc/manual/magit/How-to-install-the-gitman-info-manual_003f.html
   )
+
+;; (use-package magit-todos
+;;   :config
+;;   (magit-todos-mode)
+;;   :custom
+;;   (magit-todos-max-items 30))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ~~~~~~~~~~~~~~~~~~~~~~ ;;
@@ -441,7 +570,21 @@ Version 2018-04-02T14:38:04-07:00"
 	'((sequence "TODO(t)" "NEXT(n)" "PROJ(p)" "!URGENT!(u)" "SITF(s)" "WAIT(w@/!)" "FLUP(f@/!)" "|"
 		    "DONE(d!)" "CANCELLED(c@/!)")))
 
-  ;; set frequent tags (note: @*s are mutually exclusive)
+  ;; ;; colorized keywords
+  ;; (setq org-todo-keyword-faces
+  ;;       (quote (("TODO(t)" :foreground "red" :weight bold)
+  ;;               ("WAITING(w)" :foreground "brown" :weight bold)
+  ;;               ("WAITING(w)" :foreground "yellow" :weight bold)
+  ;;               ("DONE(d)" :foreground "green" :weight bold)
+  ;;               ("CANCELLED" :foreground "brown" :weight bold))))
+
+  ;; set frequent tags (note: @*s are mutually exclusive);; colorized keywords
+  (setq org-todo-keyword-faces
+        (quote (("TODO(t)" :foreground "red" :weight bold)
+                ("WAITING(w)" :foreground "brown" :weight bold)
+                ("WAITING(w)" :foreground "yellow" :weight bold)
+                ("DONE(d)" :foreground "green" :weight bold)
+                ("CANCELLED" :foreground "brown" :weight bold))))
   (setq org-tag-alist '((:startgroup . nil)
 			("@home" . ?h)  ("@school" . ?s) ("@work" . ?w) ("@errands" . ?e) ("@travel" . ?t)
 			(:endgroup . nil)
@@ -640,8 +783,8 @@ text and copying to the killring."
 
 ;; get pretty org bullets
 (use-package org-bullets
+  :after org
   :straight t
-  :init
   :config
   (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
   )
@@ -649,7 +792,7 @@ text and copying to the killring."
 ;;;;;;;;;;;;;
 ;; neotree ;;
 ;;;;;;;;;;;;;
-;; nice directory veiwew/navigator
+;; nice directory veiwer/navigator
 
 (use-package neotree
   :straight t
@@ -665,22 +808,28 @@ text and copying to the killring."
 ;;;;;;;;;;;;;;;;
 (use-package projectile
   :straight t
+  :diminish projectile-mode
   :config
   (projectile-mode +1)
+  (setq projectile-completion-system 'ivy)
+  (setq projectile-enable-caching t)
+  (setq projectile-sort-order 'recently-active)
   (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
   (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
   )
 
-;;;;;;;;;;;;;;;
-;; sublimity ;;
-;;;;;;;;;;;;;;;
-;; smooth scrolling and minimap
+;; Common functions:
+;; c-p f: find all files in the project
+;; c-p d: find all directories in the project
+;; c-p s g: run grep on the files in the project
+;; c-p o: multi-occur on all project buffers currently open
+;; c-p i: invalidate project caches
+;; c-p k: kill project buffers
+;; c-p D: open the root of the project in Dired
+;; c-p e: show recently visited files
+;; c-p z: add currently visited file to the cache
+;; c-p p: display a list known projects
 
-;; (require 'sublimity)
-;; (require 'sublimity-scroll)
-;; ;; (require 'sublimity-map) ;; experimental
-;; ;; (require 'sublimity-attractive)
-;; (sublimity-mode 1)
 
 ;;;;;;;;;;;
 ;; tramp ;;
@@ -712,9 +861,17 @@ text and copying to the killring."
 ;; and https://truthseekers.io/lessons/how-to-use-ivy-swiper-counsel-in-emacs-for-noobs/
 
 (use-package counsel
-  :straight t)
+  :straight t
+  :bind ;; use counsel for yank/pop and allow M-y to continue through the entries
+  (("M-y" . counsel-yank-pop)
+   :map ivy-minibuffer-map
+   ("M-y" . ivy-next-line)))
 
 (use-package swiper
+  :straight t)
+
+;; installed so counsel-M-x will default to using smex to list reccent calls first
+(use-package smex
   :straight t)
 
 ;; turn on ivy-mode globally
@@ -726,6 +883,7 @@ text and copying to the killring."
   (setq ivy-use-virtual-buffers t)
   ;; no idea, but recommended by project maintainer
   (setq enable-recursive-minibuffers t)
+  (setq ivy-use-selectable-prompt t)
   ;; number of result lines to display
   (setq ivy-height 10)
   ;; does not count candidates
@@ -970,3 +1128,434 @@ text and copying to the killring."
  '(font-lock-comment-face ((t (:foreground "#5F8DAD" :slant normal))))
  '(scroll-bar ((t (:foreground "dark slate gray"))))
  '(show-paren-match ((t (:background "cyan" :inverse-video nil)))))
+
+
+
+;;;;; emacs inits that I've pulled heavily from and or may want to revisit
+
+;;;; https://ladicle.com/post/config/#configuration
+;; hydra
+
+;;;; https://github.com/waymondo/hemacs/blob/master/init.el
+
+;;;; https://github.com/chuvanan/dot-files/blob/master/emacs-init.el
+
+;; poly-mode
+;; crux
+;; ag
+;; rg
+
+;; use ag/rg with counsel:
+;; (use-package counsel-projectile
+;;   :config
+;;   :bind
+;;   ("C-c p s r" . counsel-projectile-rg)
+;;   ("C-c p s s" . counsel-projectile-ag))
+
+;; -----------------------------------------------------------------------------
+;; roam
+;; -----------------------------------------------------------------------------
+
+;; (straight-use-package
+;;  '(org-roam :type git :host github :repo "jethrokuan/org-roam"))
+;; (require 'org-roam)
+;; (setq org-roam-directory "~/Documents/roam/")
+;; (define-key org-roam-mode-map (kbd "C-c n l") #'org-roam)
+;; (define-key org-roam-mode-map (kbd "C-c n f") #'org-roam-find-file)
+;; (define-key org-roam-mode-map (kbd "C-c n b") #'org-roam-switch-to-buffer)
+;; (define-key org-roam-mode-map (kbd "C-c n g") #'org-roam-graph-show)
+;; (define-key org-mode-map (kbd "C-c n i") #'org-roam-insert)
+;; (setq org-roam-link-title-format "[R:%s]")
+;; (setq org-roam-completion-system 'ivy)
+;; (setq org-roam-graph-executable "/usr/bin/neato")
+;; (setq org-roam-graph-extra-config '(("overlap" . "false")))
+;; (setq org-roam-graph-viewer "/usr/bin/brave-browser")
+;; (org-roam-mode +1)
+
+;; -----------------------------------------------------------------------------
+;; org-journal
+;; -----------------------------------------------------------------------------
+
+
+;; (use-package org-journal
+;;   :bind
+;;   ("C-c n j" . org-journal-new-entry)
+;;   :custom
+;;   (org-journal-date-prefix "#+TITLE: ")
+;;   (org-journal-file-format "%Y-%m-%d.org")
+;;   (org-journal-dir "~/Documents/roam/")
+;;   (org-journal-date-format "%A, %d %B %Y"))
+
+;;------------------------------------------------------------------------------
+;; deft
+;;------------------------------------------------------------------------------
+
+;; (use-package deft
+;;   ;; same as above...
+;;   :config/el-patch
+;;   (defun deft-parse-title (file contents)
+;;     "Parse the given FILE and CONTENTS and determine the title.
+;; If `deft-use-filename-as-title' is nil, the title is taken to
+;; be the first non-empty line of the FILE.  Else the base name of the FILE is
+;; used as title."
+;;     (el-patch-swap (if deft-use-filename-as-title
+;;                        (deft-base-filename file)
+;;                      (let ((begin (string-match "^.+$" contents)))
+;;                        (if begin
+;;                            (funcall deft-parse-title-function
+;;                                     (substring contents begin (match-end 0))))))
+;;                    (org-roam--get-title-or-slug file))))
+
+
+;; (use-package deft
+;;   :after org
+;;   :bind
+;;   ("C-c n d" . deft)
+;;   ("<f8>" . deft)
+;;   :custom
+;;   (deft-recursive t)
+;;   (deft-use-filter-string-for-filename t)
+;;   (deft-default-extension "org")
+;;   (deft-directory "~/Documents/roam/"))
+
+;; -----------------------------------------------------------------------------
+;; ESS
+;; -----------------------------------------------------------------------------
+
+;; (add-to-list 'load-path "/home/anchu/.emacs.d/elpa/ess-20190814.1054")
+
+;; (use-package ess
+;;   :defer t
+;;   :init
+;;   (require 'ess-r-mode)
+;;   ;; (require 'ess-site)
+;;   ;; (require 'ess-rutils)
+;;   ;; Auto set width and length options when initiate new Ess processes
+;;   :config
+;;   (add-hook 'ess-post-run-hook 'ess-execute-screen-options)
+;;   (add-hook 'ess-mode-hook (lambda () (run-hooks 'prog-mode-hook)))
+;;   (add-hook 'ess-mode-hook
+;;             (lambda () (ess-set-style 'RRR 'quiet)
+;;               (add-hook 'local-write-file-hooks
+;;                         (lambda () (ess-nuke-trailing-whitespace)))))
+;;   (add-hook 'inferior-ess-mode-hook 'ansi-color-for-comint-mode-on)
+;;   (add-hook 'inferior-ess-mode-hook #'(lambda ()
+;;                                         (setq-local comint-use-prompt-regexp nil)
+;;                                         (setq-local inhibit-field-text-motion nil)))
+;;   (add-hook 'ess-r-mode-hook
+;;             (lambda()
+;;               'eglot-ensure
+;;               (make-local-variable 'company-backends)
+;;               (delete-dups (push 'company-capf company-backends))
+;;               (delete-dups (push 'company-files company-backends))))
+;;   (add-to-list 'comint-output-filter-functions 'ansi-color-process-output)
+;;   (show-paren-mode)
+;;   (setq ess-eval-empty t)               ; don't skip non-code line
+;;   (setq comint-scroll-to-bottom-on-input 'this)
+;;   (setq comint-move-point-for-output 'others)
+;;   (setq ess-ask-for-ess-directory nil)
+;;   (setq ess-eval-visibly 'nowait)
+;;   (setq ess-use-flymake nil)
+;;   ;; (setq ess-r-flymake-linters '("infix_spaces_linter" . "commas_linter"))
+;;   (setq ess-roxy-fold-examples nil)
+;;   (setq ess-roxy-fontify-examples t)
+;;   (setq ess-use-company 'script-only)
+;;   (setq ess-company-arg-prefix-length 1)
+;;   (setq ess-blink-region nil)
+
+;;   (setq ess-r-flymake-lintr-cache nil)
+;;   (setq ess-history-directory "~/.R/")
+;;   (setq inferior-R-args "--no-restore-history --no-save")
+;;   (setq ess-offset-arguments 'prev-line)
+
+;;   (setq ess-indent-with-fancy-comments nil)
+
+;;   ;; fix assignment key
+;;   (ess-toggle-underscore nil)
+;;   (setq ess-insert-assign (car ess-assign-list))
+;;   (setq ess-assign-list '(" = "))
+;;   (bind-key "M--" 'ess-insert-assign)
+
+;;   (setq ess-eldoc-show-on-symbol nil)
+;;   (setq ess-eldoc-abbreviation-style 'mild)
+;;   (setq ess-use-eldoc nil)
+;;   (setq comint-scroll-to-bottom-on-output t)
+;;   :bind (:map ess-r-mode-map
+;;               ("C-c C-w w" . ess-r-package-use-dir)
+;;               ("C-c C-w C-w" . ess-r-package-use-dir)
+;;               ("<C-M-return>" . ess-eval-region-or-function-or-paragraph-and-step)
+;;               ("<C-S-return>" . ess-eval-buffer)
+;;               ("C-M-;" . comment-line)
+;;               ("C-S-<f10>" . inferior-ess-reload)
+;;               ("<f5>" . ess-display-help-on-object)
+;;               ("<C-return>" . ess-eval-region-or-function-or-paragraph))
+;;   :bind (:map inferior-ess-mode-map
+;;               ("C-S-<f10>" . inferior-ess-reload)))
+
+;; ;; syntax highlight
+;; (setq ess-R-font-lock-keywords
+;;       (quote
+;;        ((ess-R-fl-keyword:modifiers . t)
+;;         (ess-R-fl-keyword:fun-defs . t)
+;;         (ess-R-fl-keyword:fun-defs2 . t)
+;;         (ess-R-fl-keyword:keywords . t)
+;;         (ess-R-fl-keyword:assign-ops)
+;;         (ess-R-fl-keyword:constants . t)
+;;         (ess-fl-keyword:fun-calls . t)
+;;         (ess-fl-keyword:numbers . t)
+;;         (ess-fl-keyword:operators)
+;;         (ess-fl-keyword:delimiters)
+;;         (ess-fl-keyword:=)
+;;         (ess-fl-keyword::= . t)
+;;         (ess-R-fl-keyword:F&T)
+;;         (ess-R-fl-keyword:%op%))))
+
+;; (setq inferior-ess-r-font-lock-keywords
+;;       (quote
+;;        ((ess-S-fl-keyword:prompt . t)
+;;         (ess-R-fl-keyword:messages . t)
+;;         (ess-R-fl-keyword:modifiers . t)
+;;         (ess-R-fl-keyword:fun-defs . t)
+;;         (ess-R-fl-keyword:fun-defs2 . t)
+;;         (ess-R-fl-keyword:keywords . t)
+;;         (ess-R-fl-keyword:assign-ops)
+;;         (ess-R-fl-keyword:constants . t)
+;;         (ess-fl-keyword:matrix-labels)
+;;         (ess-fl-keyword:fun-calls)
+;;         (ess-fl-keyword:numbers)
+;;         (ess-fl-keyword:operators)
+;;         (ess-fl-keyword:delimiters)
+;;         (ess-fl-keyword:=)
+;;         (ess-fl-keyword::= . t)
+;;         (ess-R-fl-keyword:F&T))))
+
+;; (define-key polymode-mode-map (kbd "<f10>") 'polymode-eval-map)
+
+;; ;; http://www.emacswiki.org/emacs/ess-edit.el
+;; (defun ess-edit-word-at-point ()
+;;   (save-excursion
+;;     (buffer-substring
+;;      (+ (point) (skip-chars-backward "a-zA-Z0-9._"))
+;;      (+ (point) (skip-chars-forward "a-zA-Z0-9._")))))
+;; ;; eval any word where the cursor is (objects, functions, etc)
+;; (defun ess-eval-word ()
+;;   (interactive)
+;;   (let ((x (ess-edit-word-at-point)))
+;;     (ess-eval-linewise (concat x)))
+;;   )
+;; ;; key binding
+;; (define-key ess-r-mode-map (kbd "<S-return>") 'ess-eval-word)
+;; (define-key ess-r-mode-map (kbd "C-'") 'ess-eval-line)
+;; (define-key ess-r-mode-map (kbd "<C-return>") 'ess-eval-region-or-function-or-paragraph)
+;; (define-key ess-r-mode-map (kbd "<M-return>") 'ess-eval-line)
+;; (define-key ess-r-mode-map (kbd "C-;") 'ess-eval-line-and-step)
+
+;; ;; %>% operator
+;; (defun anchu/isnet_then_R_operator ()
+;;   "R - %>% operator or 'then' pipe operator"
+;;   (interactive)
+;;   (just-one-space 1)
+;;   (insert "%>%")
+;;   (reindent-then-newline-and-indent))
+
+;; (define-key ess-r-mode-map (kbd "C-S-m") 'anchu/isnet_then_R_operator)
+;; (define-key inferior-ess-r-mode-map (kbd "C-S-m") 'anchu/isnet_then_R_operator)
+
+;; ;; ->. operator
+
+;; (defun anchu/insert_bizarro_pipe_operator ()
+;;   "R - %>% operator or 'then' pipe operator"
+;;   (interactive)
+;;   (just-one-space 1)
+;;   (insert "->.;")
+;;   (reindent-then-newline-and-indent))
+
+;; (define-key ess-r-mode-map (kbd "C-:") 'anchu/insert_bizarro_pipe_operator)
+;; (define-key inferior-ess-r-mode-map (kbd "C-:") 'anchu/insert_bizarro_pipe_operator)
+
+;; ;; %in% operator
+;; (defun anchu/insert_in_operator ()
+;;   "R - %in% operator"
+;;   (interactive)
+;;   (just-one-space 1)
+;;   (insert "%in%")
+;;   (just-one-space 1))
+
+;; (define-key ess-r-mode-map (kbd "C-S-i") 'anchu/insert_in_operator)
+;; (define-key inferior-ess-r-mode-map (kbd "C-S-i") 'anchu/insert_in_operator)
+
+;; ;; <<- operator
+;; (defun anchu/insert_double_assign_operator ()
+;;   "R - <<- operator"
+;;   (interactive)
+;;   (just-one-space 1)
+;;   (insert "<<-")
+;;   (just-one-space 1))
+
+;; (define-key ess-r-mode-map (kbd "C-M-=") 'anchu/insert_double_assign_operator)
+;; (define-key inferior-ess-r-mode-map (kbd "C-M-=") 'anchu/insert_double_assign_operator)
+
+;; ;; -> operator
+;; (defun anchu/insert_right_assign_operator ()
+;;   "R - %in% operator"
+;;   (interactive)
+;;   (just-one-space 1)
+;;   (insert "->")
+;;   (just-one-space 1))
+
+;; (define-key ess-r-mode-map (kbd "C-M--") 'anchu/insert_right_assign_operator)
+;; (define-key inferior-ess-r-mode-map (kbd "C-M--") 'anchu/insert_right_assign_operator)
+
+;; (defun anchu/ess-rmarkdown ()
+;;   "Compile R markdown (.Rmd). Should work for any output type."
+;;   (interactive)
+;;   ;; Check if attached R-session
+;;   (condition-case nil
+;;       (ess-get-process)
+;;     (error
+;;      (ess-switch-process)))
+;;   (let* ((rmd-buf (current-buffer)))
+;;     (save-excursion
+;;       (let* ((sprocess (ess-get-process ess-current-process-name))
+;;              (sbuffer (process-buffer sprocess))
+;;              (buf-coding (symbol-name buffer-file-coding-system))
+;;              (R-cmd
+;;               (format "library(rmarkdown); rmarkdown::render(\"%s\")"
+;;                       buffer-file-name)))
+;;         (message "Running rmarkdown on %s" buffer-file-name)
+;;         (ess-execute R-cmd 'buffer nil nil)
+;;         (switch-to-buffer rmd-buf)
+;;         (ess-show-buffer (buffer-name sbuffer) nil)))))
+
+;; (define-key polymode-mode-map "\M-ns" 'anchu/ess-rmarkdown)
+;; (define-key polymode-mode-map (kbd "<f8>") 'anchu/ess-rmarkdown)
+
+;; (defun anchu/ess-rshiny ()
+;;   "Compile R markdown (.Rmd). Should work for any output type."
+;;   (interactive)
+;;   ;; Check if attached R-session
+;;   (condition-case nil
+;;       (ess-get-process)
+;;     (error
+;;      (ess-switch-process)))
+;;   (let* ((rmd-buf (current-buffer)))
+;;     (save-excursion
+;;       (let* ((sprocess (ess-get-process ess-current-process-name))
+;;              (sbuffer (process-buffer sprocess))
+;;              (buf-coding (symbol-name buffer-file-coding-system))
+;;              (R-cmd
+;;               (format "library(rmarkdown); rmarkdown::run(\"%s\")"
+;;                       buffer-file-name)))
+;;         (message "Running shiny on %s" buffer-file-name)
+;;         (ess-execute R-cmd 'buffer nil nil)
+;;         (switch-to-buffer rmd-buf)
+;;         (ess-show-buffer (buffer-name sbuffer) nil)))))
+
+;; (define-key polymode-mode-map "\M-nr" 'anchu/ess-rshiny)
+;; (define-key polymode-mode-map (kbd "<f9>") 'anchu/ess-rshiny)
+
+;; (defun anchu/ess-publish-rmd ()
+;;   "Publish R Markdown (.Rmd) to remote server"
+;;   (interactive)
+;;   ;; Check if attached R-session
+;;   (condition-case nil
+;;       (ess-get-process)
+;;     (error
+;;      (ess-switch-process)))
+;;   (let* ((rmd-buf (current-buffer)))
+;;     (save-excursion
+;;       ;; assignment
+;;       (let* ((sprocess (ess-get-process ess-current-process-name))
+;;              (sbuffer (process-buffer sprocess))
+;;              (buf-coding (symbol-name buffer-file-coding-system))
+;;              (R-cmd
+;;               (format "workflow::wf_publish_rmd(\"%s\")"
+;;                       buffer-file-name)))
+;;         ;; execute
+;;         (message "Publishing rmarkdown on %s" buffer-file-name)
+;;         (ess-execute R-cmd 'buffer nil nil)
+;;         (switch-to-buffer rmd-buf)
+;;         (ess-show-buffer (buffer-name sbuffer) nil)))))
+
+
+
+;; ;; (define-key polymode-mode-map "\M-np" 'anchu/ess-publish-rmd)
+
+;; (defun anchu/insert-minor-section ()
+;;   "Insert minor section heading for a snippet of R codes."
+;;   (interactive)
+;;   (insert "## -----------------------------------------------------------------------------\n")
+;;   (insert "## "))
+
+;; (define-key ess-r-mode-map (kbd "C-c C-a n") 'anchu/insert-minor-section)
+
+;; (defun anchu/insert-r-code-chunk ()
+;;   "Insert R Markdown code chunk."
+;;   (interactive)
+;;   (insert "```{r}\n")
+;;   (insert "\n")
+;;   (save-excursion
+;;     (insert "\n")
+;;     (insert "\n")
+;;     (insert "```\n")))
+
+;; (define-key polymode-mode-map (kbd "C-c C-a c") 'anchu/insert-r-code-chunk)
+
+;; (defun anchu/insert-major-section ()
+;;   "Insert major section heading for a block of R codes."
+;;   (interactive)
+;;   (insert "## -----------------------------------------------------------------------------\n")
+;;   (insert "## ")
+;;   (save-excursion
+;;     (insert "\n")
+;;     (insert "## -----------------------------------------------------------------------------\n")))
+
+;; (define-key ess-r-mode-map (kbd "C-c C-a m") 'anchu/insert-major-section)
+
+;; (defun anchu/insert-resource-header ()
+;;   "Insert yaml-like header for R script resources."
+;;   (interactive)
+;;   (insert "## -----------------------------------------------------------------------------\n")
+;;   (insert "## code: ")
+;;   (save-excursion
+;;     (insert "\n")
+;;     (insert "## description: \n")
+;;     (insert "## author: \n")
+;;     (insert (concat "## date: " (current-time-string) "\n"))
+;;     (insert "## -----------------------------------------------------------------------------\n")))
+
+;; (define-key ess-r-mode-map (kbd "C-c C-a r") 'anchu/insert-resource-header)
+
+;; (defun anchu/insert-yalm-header ()
+;;   "Insert Rmd header."
+;;   (interactive)
+;;   (insert "---\n")
+;;   (insert "title: ")
+;;   (save-excursion
+;;     (newline)
+;;     (insert "author: \n")
+;;     (insert "date: \"`r format(Sys.time(), '%d-%m-%Y %H:%M:%S')`\"\n")
+;;     (insert "runtime: shiny\n")
+;;     (insert "output:\n")
+;;     (indent-to-column 4)
+;;     (insert "html_document:\n")
+;;     (indent-to-column 8)
+;;     (insert "theme: flatly\n")
+;;     (insert "---")
+;;     (newline)))
+
+;; (define-key polymode-mode-map (kbd "C-c C-a y") 'anchu/insert-yalm-header)
+
+;; (defun anchu/insert-named-comment (cmt)
+;;   "Make comment header"
+;;   (interactive "sEnter your comment: ")
+;;   (let* ((user-cmt (concat "## " cmt " "))
+;;          (len-user-cmt (length user-cmt))
+;;          (len-hyphen (- 80 len-user-cmt)))
+;;     (insert user-cmt (apply 'concat (make-list len-hyphen "-")))
+;;     (newline)
+;;     (newline)
+;;     )
+;;   )
+
+;; (define-key ess-r-mode-map (kbd "C-c C-a d") 'anchu/insert-named-comment)
