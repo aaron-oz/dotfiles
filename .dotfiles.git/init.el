@@ -10,12 +10,12 @@
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
       (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
-    (with-current-buffer\
-     (url-retrieve-synchronously
-      "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-      'silent 'inhibit-cookies)
-     (goto-char (point-max))
-     (eval-print-last-sexp)))
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
 ;; add use-package, and effectively replace use-package with straight-use-package
@@ -133,6 +133,39 @@
   :config
   (which-key-mode +1))
 
+;; Don't display *compilation* buffer in Emacs until the process exits
+;; with error or warning
+;; https://stackoverflow.com/questions/17659212/dont-display-compilation-buffer-in-emacs-until-the-process-exits-with-error-o/17788551#17788551
+;; added bc auctex compilation buffer always popping up (and not
+;; leaving automatically) was annoying
+(use-package cl
+  :straight t)
+(use-package noflet
+  :straight t
+  :config
+  (defun my-compile-finish (buffer outstr)
+    (unless (string-match "finished" outstr)
+      (switch-to-buffer-other-window buffer))
+    t)
+  (setq compilation-finish-functions 'my-compile-finish)
+  (defadvice compilation-start
+      (around inhibit-display
+	      (command &optional mode name-function highlight-regexp))
+    (if (not (string-match "^\\(find\\|grep\\)" command))
+	(flet ((display-buffer) ;; aoz - changed on 2020aug19 due to flet deprecation
+	;;(noflet ((display-buffer ())  ;; aoz - changed on 2020aug19 due to flet deprecation
+		 (set-window-point)
+		 (goto-char))
+   (fset 'display-buffer 'ignore)
+   (fset 'goto-char 'ignore)
+   (fset 'set-window-point 'ignore)
+   (save-window-excursion
+     ad-do-it))
+      ad-do-it))
+
+  (ad-activate 'compilation-start)
+  )
+
 ;;;;;;;;
 ;; UX ;;
 ;;;;;;;;
@@ -171,7 +204,7 @@
 (use-package elec-pair
   :init (electric-pair-mode))
 
-;; since electris-pair is a global minor mode, it's always active and
+;; since electric-pair is a global minor mode, it's always active and
 ;; this can cause problems with other modes (e.g. autocomplete of
 ;; \letf( in auxtex).
 ;; so, from here:
@@ -246,8 +279,15 @@
 (use-package rainbow-delimiters
   :straight t
   :config
-  (rainbow-delimiters-mode 1)
-  )
+  (rainbow-delimiters-mode 1))
+
+;; beacon mode to find the cursor
+(use-package beacon
+  :straight t
+  :custom
+  (beacon-color "#f1fa8c")
+  :config
+  (beacon-mode 1))
 
 ;; show matching paren line/position in modeline
 ;; TODO
@@ -256,7 +296,7 @@
 ;; R editting ;;
 ;;;;;;;;;;;;;;;;
 ;; Set default R version, (i.e. the one launched by typing M-x R <RET>)
-(setq inferior-R-program-name "/usr/bin/R")
+(setq inferior-R-program-name "/usr/local/bin/R")
 
 (use-package ess
   :straight t
@@ -544,15 +584,15 @@ Version 2018-04-02T14:38:04-07:00"
   ;; and can be linked to other files specified in: ~/.emacs.d/.org-id-locations
   ;; then set a shortcut to copy the id of the header the cursor is on
 
-  ;; (defun my/org-add-ids-to-headlines-in-file ()
-  ;;   "Add ID properties to all headlines in the current file which
-  ;; do not already have one."
-  ;;   (interactive)
-  ;;   (org-map-entries 'org-id-get-create))
+  (defun my/org-add-ids-to-headlines-in-file ()
+    "Add ID properties to all headlines in the current file which
+  do not already have one."
+    (interactive)
+    (org-map-entries 'org-id-get-create))
 
-  ;; (add-hook 'org-mode-hook
-  ;;           (lambda ()
-  ;;             (add-hook 'before-save-hook 'my/org-add-ids-to-headlines-in-file nil 'local)))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (add-hook 'before-save-hook 'my/org-add-ids-to-headlines-in-file nil 'local)))
 
   ;; copy id of headline
   (defun my/copy-id-to-clipboard()
@@ -704,14 +744,22 @@ text and copying to the killring."
   (global-set-key (kbd "C-c o") 'origami-toggle-node)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ivy, swiper, counsel ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ivy, swiper, counsel, and associated pkgs ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; from https://sam217pa.github.io/2016/09/13/from-helm-to-ivy/
 ;; and https://truthseekers.io/lessons/how-to-use-ivy-swiper-counsel-in-emacs-for-noobs/
 
 (use-package counsel
+  :straight t)
+
+(use-package smex
+  ;; counsel will auto-use smex IF it's installed. so make sure it is!
+  :straight t)
+
+(use-package avy
+  ;; ivy can auto-use avy IF it's installed. so make sure it is!
   :straight t)
 
 (use-package swiper
@@ -838,6 +886,17 @@ text and copying to the killring."
 ;; appearance ;;
 ;;;;;;;;;;;;;;;;
 
+(use-package all-the-icons-dired
+  :straight t)
+
+;; for gnus buffers
+(use-package all-the-icons-gnus
+  :straight t
+  :defer t
+  :config
+  (all-the-icons-gnus-setup)
+  )
+
 ;; all the icons
 (use-package all-the-icons
   :straight t
@@ -850,15 +909,6 @@ text and copying to the killring."
   ;; for neotre, see the neotree section
   ;; for ivy, see the ivy section
   )
-
-;; for gnus buffers
-(use-package all-the-icons-gnus
-  :straight t
-  :defer t
-  :config
-  (all-the-icons-gnus-setup)
-  )
-
 
 ;; Set transparency of selected and unselected frames
 ;;(set-frame-parameter (selected-frame) 'alpha '(<active> . <inactive>))
@@ -884,7 +934,7 @@ text and copying to the killring."
  '(custom-enabled-themes (quote (kaolin-ocean)))
  '(custom-safe-themes
    (quote
-    ("53993d7dc1db7619da530eb121aaae11c57eaf2a2d6476df4652e6f0bd1df740" "a9d67f7c030b3fa6e58e4580438759942185951e9438dd45f2c668c8d7ab2caf" "ff829b1ac22bbb7cee5274391bc5c9b3ddb478e0ca0b94d97e23e8ae1a3f0c3e" "11e0bc5e71825b88527e973b80a84483a2cfa1568592230a32aedac2a32426c1" "51043b04c31d7a62ae10466da95a37725638310a38c471cc2e9772891146ee52" "030346c2470ddfdaca479610c56a9c2aa3e93d5de3a9696f335fd46417d8d3e4" "7d4340a89c1f576d1b5dec57635ab93cdc006524bda486b66d01a6f70cffb08e" "886fe9a7e4f5194f1c9b1438955a9776ff849f9e2f2bbb4fa7ed8879cdca0631" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "3629b62a41f2e5f84006ff14a2247e679745896b5eaa1d5bcfbc904a3441b0cd" "6ee6f99dc6219b65f67e04149c79ea316ca4bcd769a9e904030d38908fd7ccf9" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "82d2cac368ccdec2fcc7573f24c3f79654b78bf133096f9b40c20d97ec1d8016" "c567c85efdb584afa78a1e45a6ca475f5b55f642dfcd6277050043a568d1ac6f" "39dd7106e6387e0c45dfce8ed44351078f6acd29a345d8b22e7b8e54ac25bac4" "cab317d0125d7aab145bc7ee03a1e16804d5abdfa2aa8738198ac30dc5f7b569" "1a53efc62256480d5632c057d9e726b2e64714d871e23e43816735e1b85c144c" "8db4b03b9ae654d4a57804286eb3e332725c84d7cdab38463cb6b97d5762ad26" "345f8f92edc3508574c61850b98a2e0a7a3f5ba3bb9ed03a50f6e41546fe2de0" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "4aee8551b53a43a883cb0b7f3255d6859d766b6c5e14bcb01bed572fcbef4328" default)))
+    ("d606c31488b2ec9e65b57918a5be9382b8343eeed188adab91d3bd2b111bacf3" "53993d7dc1db7619da530eb121aaae11c57eaf2a2d6476df4652e6f0bd1df740" "a9d67f7c030b3fa6e58e4580438759942185951e9438dd45f2c668c8d7ab2caf" "ff829b1ac22bbb7cee5274391bc5c9b3ddb478e0ca0b94d97e23e8ae1a3f0c3e" "11e0bc5e71825b88527e973b80a84483a2cfa1568592230a32aedac2a32426c1" "51043b04c31d7a62ae10466da95a37725638310a38c471cc2e9772891146ee52" "030346c2470ddfdaca479610c56a9c2aa3e93d5de3a9696f335fd46417d8d3e4" "7d4340a89c1f576d1b5dec57635ab93cdc006524bda486b66d01a6f70cffb08e" "886fe9a7e4f5194f1c9b1438955a9776ff849f9e2f2bbb4fa7ed8879cdca0631" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "3629b62a41f2e5f84006ff14a2247e679745896b5eaa1d5bcfbc904a3441b0cd" "6ee6f99dc6219b65f67e04149c79ea316ca4bcd769a9e904030d38908fd7ccf9" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "82d2cac368ccdec2fcc7573f24c3f79654b78bf133096f9b40c20d97ec1d8016" "c567c85efdb584afa78a1e45a6ca475f5b55f642dfcd6277050043a568d1ac6f" "39dd7106e6387e0c45dfce8ed44351078f6acd29a345d8b22e7b8e54ac25bac4" "cab317d0125d7aab145bc7ee03a1e16804d5abdfa2aa8738198ac30dc5f7b569" "1a53efc62256480d5632c057d9e726b2e64714d871e23e43816735e1b85c144c" "8db4b03b9ae654d4a57804286eb3e332725c84d7cdab38463cb6b97d5762ad26" "345f8f92edc3508574c61850b98a2e0a7a3f5ba3bb9ed03a50f6e41546fe2de0" "4cf3221feff536e2b3385209e9b9dc4c2e0818a69a1cdb4b522756bcdf4e00a4" "4aee8551b53a43a883cb0b7f3255d6859d766b6c5e14bcb01bed572fcbef4328" default)))
  '(debug-on-error t)
  '(fci-rule-color "#073642")
  '(flycheck-color-mode-line-face-to-color (quote mode-line-buffer-id))
@@ -931,6 +981,7 @@ text and copying to the killring."
  '(pos-tip-background-color "#A6E22E")
  '(pos-tip-foreground-color "#272822")
  '(recentf-max-menu-items 50)
+ '(safe-local-variable-values (quote ((TeX-master . t))))
  '(save-place-mode t nil (saveplace))
  '(scroll-bar-mode nil)
  '(show-paren-mode t)
