@@ -1,0 +1,16 @@
+[Added Associations]
+text/plain=libreoffice-writer.desktop;micro.desktop;
+application/x-shellscript=micro.desktop;
+image/svg+xml=qutebrowser.desktop;
+text/x-scheme=micro.desktop;
+application/xml=qutebrowser.desktop;
+application/pdf=okularApplication_pdf.desktop;org.pwmt.zathura-pdf-poppler.desktop;xreader.desktop;libreoffice-draw.desktop;
+image/png=shotwell-viewer.desktop;org.qutebrowser.qutebrowser.desktop;nyxt.desktop;okularApplication_kimgio.desktop;xviewer.desktop;
+image/jpeg=xviewer.desktop;
+text/html=emacs.desktop;okularApplication_txt.desktop;
+
+[Default Applications]
+text/plain=micro.desktop
+application/pdf=xreader.desktop
+x-scheme-handler/https=qutebrowser.desktop
+x-scheme-handler/http=qutebrowser.desktop

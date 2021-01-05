@@ -1,0 +1,6 @@
+2020/12/23-14:07:38.216 94c4 Reusing MANIFEST /home/merms/.config/skypeforlinux/Local Storage/leveldb/MANIFEST-000001
+2020/12/23-14:07:38.216 94c4 Recovering log #115
+2020/12/23-14:07:38.216 94c4 Reusing old log /home/merms/.config/skypeforlinux/Local Storage/leveldb/000115.log 
+2020/12/23-14:08:39.231 95fb Level-0 table #120: started
+2020/12/23-14:08:39.233 95fb Level-0 table #120: 69096 bytes OK
+2020/12/23-14:08:39.235 95fb Delete type=0 #115

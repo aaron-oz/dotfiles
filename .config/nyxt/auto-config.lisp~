@@ -1,0 +1,4 @@
+(define-configuration (buffer web-buffer)
+  ((default-modes (append '(emacs-mode) %slot-default))))
+(DEFINE-CONFIGURATION WEB-BUFFER
+  ((DEFAULT-MODES '(CERTIFICATE-EXCEPTION-MODE WEB-MODE BASE-MODE))))
