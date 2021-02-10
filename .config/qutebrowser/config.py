@@ -77,7 +77,7 @@ c.bindings.commands['normal'] = {
     '<alt-shift-v>': 'scroll-page 0 -1',
 
     '<alt-x>': 'set-cmd-text :',
-    '<ctrl-x>b': 'set-cmd-text -s :buffer;;fake-key <Down><Down><Down>',
+    '<ctrl-x>b': 'set-cmd-text -s :tab-select;;fake-key <Down><Down><Down>',
     '<ctrl-x>k': 'tab-close',
     '<ctrl-x><ctrl-r>': 'config-cycle statusbar.hide',
     '<ctrl-x>1': 'tab-only;;message-info "cleared all other tabs"',

@@ -167,7 +167,7 @@
 ;; set replace-string keyboard binding
 (global-set-key (kbd "M-r") 'replace-string)
 
-;; ;; turn on recent files with C-x C-r
+;; turn on recent files with C-x C-r
 (use-package recentf
   :straight t
   :config
@@ -175,6 +175,19 @@
   (setq recentf-max-menu-items 25)
   (global-set-key "\C-x\ \C-r" 'recentf-open-files)
   )
+
+;; added to allow counsel-find-file show recent files
+(use-package switch-buffer-functions
+  :straight t
+  :defer t
+  :after recentf
+  :preface
+  (defun my-recentf-track-visited-file (_prev _curr)
+    (and buffer-file-name
+         (recentf-add-file buffer-file-name)))
+  :init
+  (add-hook 'switch-buffer-functions #'my-recentf-track-visited-file))
+
 
 ;; Bound undo to C-z
 (global-set-key (kbd "C-z") 'undo)
@@ -1773,7 +1786,7 @@ text and copying to the killring."
   :straight t
   :config
   (ivy-mode 1)
-  ;; add 'recentf-mode' and bookmarks to 'ivy-switch-buffer'
+  ;; add 'recentf-mode' (recent files) and bookmarks to 'ivy-switch-buffer'
   (setq ivy-use-virtual-buffers t)
   ;; no idea, but recommended by project maintainer
   (setq enable-recursive-minibuffers t)
@@ -1952,6 +1965,21 @@ text and copying to the killring."
   ;; for neotre, see the neotree section
   ;; for ivy, see the ivy section
   )
+
+
+;;;;;;;;;;;;;;;
+;; FUNCTIONS ;;
+;;;;;;;;;;;;;;;
+
+(defun unfill-paragraph ()
+  (interactive)
+  (let ((fill-column (point-max)))
+    (fill-paragraph nil)))
+
+(defun unfill-region ()
+  (interactive)
+  (let ((fill-column (point-max)))
+    (fill-region (region-beginning) (region-end) nil)))
 
 
 
