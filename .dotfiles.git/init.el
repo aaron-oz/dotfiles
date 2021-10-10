@@ -100,7 +100,7 @@
  '(magit-diff-use-overlays nil)
  '(moody-slant-function 'moody-slant-apple-rgb)
  '(org-agenda-files
-   '("~/Documents/Org/inbox.org" "~/Documents/Org/school.org" "~/Documents/Org/mylife.org"))
+   '("~/Dropbox/AaronJon/EU_Cancer/cancer_notes.org" "~/Documents/Org/inbox.org" "~/Documents/Org/school.org" "~/Documents/Org/mylife.org"))
  '(org-log-into-drawer t)
  '(package-selected-packages
    '(magit counsel-tramp counsel-projectile org-projectile projectile origami sublimity avy smex helm-org-rifle flx flyspell-correct-ivy ivy-omni-org ivy-rich ivy-todo helm-swoop expand-region multiple-cursors latex-math-preview latex-pretty-symbols latex-preview-pane kaolin-themes doom-themes org-bullets spacemacs-theme ess auto-complete autopair color-theme color-theme-sanityinc-solarized color-theme-sanityinc-tomorrow color-theme-solarized darkokai-theme electric-operator monokai-theme rfringe auctex))
@@ -155,21 +155,16 @@
  '(show-paren-match ((t (:background "cyan" :inverse-video nil)))))
 
 
-;;;;;;;;;;;;;;;;;;;;;
-;; set global keys ;;
-;;;;;;;;;;;;;;;;;;;;;
-
-;; fast commenting/uncommenting
-(global-set-key (kbd "M-\-") 'comment-dwim)
-;; comment one line
-(global-set-key (kbd "C-M-;") 'comment-line)
-
-;; set replace-string keyboard binding
-(global-set-key (kbd "M-r") 'replace-string)
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; recent file access ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; turn on recent files with C-x C-r
 (use-package recentf
   :straight t
+  :init
+  ;; regularly update recent files
+  (run-at-time nil (* 5 60) 'recentf-save-list)
   :config
   (recentf-mode 1)
   (setq recentf-max-menu-items 25)
@@ -189,19 +184,6 @@
   (add-hook 'switch-buffer-functions #'my-recentf-track-visited-file))
 
 
-;; Bound undo to C-z
-(global-set-key (kbd "C-z") 'undo)
-
-;; ;; fast switch between windows
-;; C-x o isn't so bad... and C-tab is used in org and magit...
-;; (global-set-key [C-tab] 'other-window)
-
-;; delete this next clean-up of init.el --AOZ 2020jun08
-;; not sure what this was doing???
-;; looks like it was to get the privous command run in an emacs shell??
-;; Control and up/down arrow keys to search history with matching what you've already typed
-;; (define-key comint-mode-map [C-up] 'comint-previous-matching-input-from-input)
-;; (define-key comint-mode-map [C-down] 'comint-next-matching-input-from-input)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; disable global keys ;;
@@ -431,11 +413,18 @@
   )
 
 ;; use pdf-tools to view pdfs
+;; pdftool reinstall always caused issues.
+;; this snippet is taken from:
+;; https://github.com/politza/pdf-tools/issues/528#issuecomment-564773133
 (use-package pdf-tools
-  :straight t
-  :init
-  (pdf-tools-install)
-  )
+  :ensure t
+  :pin manual ;; don't reinstall when package updates
+  :mode  ("\\.pdf\\'" . pdf-view-mode)
+  :config
+  (setq-default pdf-view-display-size 'fit-page)
+  (setq pdf-annot-activate-created-annotations t)
+  (pdf-tools-install :no-query)
+  (require 'pdf-occur))
 
 ;; stop emacs from asking if we want to kill active buffers when we
 ;; exit
@@ -450,6 +439,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; basic editting niceties ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; fast commenting/uncommenting
+(global-set-key (kbd "M-\-") 'comment-dwim)
+;; comment one line
+(global-set-key (kbd "C-M-;") 'comment-line)
+
+;; set replace-string keyboard binding
+(global-set-key (kbd "M-r") 'replace-string)
+
+;; Bound undo to C-z
+(global-set-key (kbd "C-z") 'undo)
 
 (use-package ispell
   :demand t)
@@ -595,11 +595,16 @@
   :straight t
   :init
   (add-hook 'ess-mode-hook #'smartparens-mode)
-  (add-hook 'ess-mode-hook #'smartparens-mode)
+  (add-hook 'inferior-ess-mode-hook #'smartparens-mode)
   (add-hook 'org-mode-hook #'smartparens-mode)
+  (add-hook 'latex-mode-hook #'smartparens-mode)
+  (add-hook 'Latex-mode-hook #'smartparens-mode)
+  (add-hook 'LaTex-mode-hook #'smartparens-mode)
   :config
   (setq sp-show-pair-from-inside nil)
+  ;;(require 'smartparents-latex)
   (require 'smartparens-config)
+
 
   ;; set up latex completion parens in org-mode.
   ;; I imagine there is a better way to do this, but this works...
@@ -615,6 +620,28 @@
   ;;        ...
   ;; then I rebuilt smartparens with
   ;; M-: (byte-recompile-file (expand-file-name "~/.emacs.d/straight/build/smartparens/smartparens-latex.el"))
+
+  ;; experimental! added 2021feb19
+  ;; supposedly works well with cdlatex
+  (sp-local-pair 'org-mode "\\[" "\\]")
+  (sp-local-pair 'org-mode "$" "$")
+  (sp-local-pair 'org-mode "'" "'" :actions '(rem))
+  (sp-local-pair 'org-mode "=" "=" :actions '(rem))
+  (sp-local-pair 'org-mode "\\left(" "\\right)" :trigger "\\l(" :post-handlers '(sp-latex-insert-spaces-inside-pair))
+  (sp-local-pair 'org-mode "\\left[" "\\right]" :trigger "\\l[" :post-handlers '(sp-latex-insert-spaces-inside-pair))
+  (sp-local-pair 'org-mode "\\left\\{" "\\right\\}" :trigger "\\l{" :post-handlers '(sp-latex-insert-spaces-inside-pair))
+  (sp-local-pair 'org-mode "\\left|" "\\right|" :trigger "\\l|" :post-handlers '(sp-latex-insert-spaces-inside-pair))
+
+  ;; trying to fix weird issue with double quotes 2021feb19
+  ;; https://github.com/Fuco1/smartparens/issues/772
+  (sp-with-modes '(tex-mode
+                   org-mode
+                   plain-tex-mode
+                   latex-mode
+                   LaTeX-mode)
+    (sp-local-pair "\"`" "\"'"
+                   :unless '(sp-latex-point-after-backslash sp-in-math-p)
+                   :post-handlers '(sp-latex-skip-double-quote)))
 
   :diminish smartparens-mode)
 
@@ -743,6 +770,12 @@
   :config
   (global-set-key (kbd "C-o") 'ace-window))
 
+(global-set-key (kbd "C-o") 'ace-window)
+
+;; C-b is usually back on char. I don't use it though...
+;; ie, back to first non-whitespace
+(global-set-key (kbd "C-b") 'back-to-indentation)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; general code editting ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -865,13 +898,13 @@ Version 2018-04-02T14:38:04-07:00"
 (global-set-key (kbd "C-c s") 'xah-shrink-whitespaces) ; Ctrl+c s
 
 ;; https://github.com/Malabarba/aggressive-indent-mode
-(use-package aggressive-indent
-  ;; :ensure t
-  :config
-  (add-hook 'ess-mode-hook #'aggressive-indent-mode)
-  (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
-  (aggressive-indent-mode 1)
-  )
+;; (use-package aggressive-indent
+;;   ;; :ensure t
+;;   :config
+;;   (add-hook 'ess-mode-hook #'aggressive-indent-mode)
+;;   (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+;;   (aggressive-indent-mode 1)
+;;   )
 
 ;;;;;;;;;;;;;;;;
 ;; R editting ;;
@@ -887,9 +920,23 @@ Version 2018-04-02T14:38:04-07:00"
   (require 'ess-site)
   ;; never ask for save, never reload saved history
   (setq inferior-R-args "--no-restore-history --no-save")
+
   ;; use ; to insert <-. hit ;; to get ;
   (define-key ess-r-mode-map ";" #'ess-insert-assign)
   (define-key inferior-ess-r-mode-map ";" #'ess-insert-assign)
+
+  ;; easy piping
+  (defun then_R_operator ()
+    "R - %>% operator or 'then' pipe operator"
+    (interactive)
+    (just-one-space 1)
+    (insert "%>%")
+    (just-one-space 1)
+    ;;(reindent-then-newline-and-indent)
+    )
+  (define-key ess-mode-map (kbd "C-%") 'then_R_operator)
+  (define-key inferior-ess-mode-map (kbd "C-%") 'then_R_operator)
+
   ;; use RStudio styling
   (setq ess-style 'RStudio)
   ;; avoid continued indenting (esp in ggplot)
@@ -965,6 +1012,11 @@ Version 2018-04-02T14:38:04-07:00"
 
   ;; turn on some optional org-modules
   (setq org-modules '(org-habit
+                      org-id         ;; added to get id:link working in html export
+                      org-ref-wos    ;; added to get id:link working in html export
+                      org-ref-scopus ;; added to get id:link working in html export
+                      org-ref-pubmed ;; added to get id:link working in html export
+                      org-ref
                       ))
   ;; load the org-modules
   (eval-after-load 'org
@@ -1091,7 +1143,8 @@ Version 2018-04-02T14:38:04-07:00"
 
   ;; set refile targets
   ;; use with C-c C-w
-  (setq org-refile-targets '(("~/Documents/Org/mylife.org" :maxlevel . 3)
+  (setq org-refile-targets '((nil :maxlevel . 1)
+                             ("~/Documents/Org/mylife.org" :maxlevel . 3)
                              ("~/Documents/Org/school.org" :maxlevel . 2)
                              ("~/Documents/Org/work.org" :maxlevel . 2)
                              ("~/Documents/Org/private_someday.org" :level . 1)
@@ -1101,6 +1154,9 @@ Version 2018-04-02T14:38:04-07:00"
                              ("~/Documents/Org/work_someday.org" :level . 1)
                              ("~/Documents/Org/work_tickler.org" :maxlevel . 2)
                              ("~/Documents/Org/cookbook.org" :maxlevel . 2)))
+
+  (setq org-refile-use-outline-path t           ;; Full paths
+        org-outline-path-complete-in-steps nil) ;; No need to traverse hierarchy
 
   ;; IDs
   ;; first, add unique property id to all headlines (if it doesn't exist)
@@ -1117,6 +1173,20 @@ Version 2018-04-02T14:38:04-07:00"
   (add-hook 'org-mode-hook
             (lambda ()
               (add-hook 'before-save-hook 'my/org-add-ids-to-headlines-in-file nil 'local)))
+
+  ;; ensure links to ids (not custom-ids) will work
+  (setq org-id-link-to-org-use-id t)
+  (setq org-link-search-must-match-exact-headline nil)
+
+  ;; and we also want to be able to easily link to ids
+  ;; see https://emacs.stackexchange.com/questions/12391/insert-org-id-link-at-point-via-outline-path-completion
+  ;; to use: insert link with C-c C-l, select id: , and completion should work
+  (defun org-id-complete-link (&optional arg)
+    "Create an id: link using completion"
+    (concat "id:"
+            (org-id-get-with-outline-path-completion)))
+  (org-link-set-parameters "id"
+                           :complete 'org-id-complete-link)
 
   ;; copy id of headline
   (defun my/copy-id-to-clipboard()
@@ -1200,6 +1270,9 @@ text and copying to the killring."
       (org-show-entry)
       (show-children)))
   (global-set-key "\M-=" 'org-show-current-heading-tidily)
+
+  ;; get notifications of agenda items using appt.el (written by uncle neil!)
+  (run-with-timer 2 1800 (lambda() (org-agenda-to-appt t)))
 
   )
 
@@ -1559,9 +1632,19 @@ text and copying to the killring."
    (latex . t)))
 (setq org-confirm-babel-evaluate nil) ;; do not ask permission each time to eval
 
+;; get R blocks evaluating asynchronously
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/straight/repos/ob-session-async/lisp/"))
+(require 'ob-session-async-R)
+
+
 ;; allow inline images
 (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
 (add-hook 'org-mode-hook 'org-display-inline-images)
+;; set a small default width to improve performance
+(setq org-image-actual-width 400)
+
+;; default to closed blocks of code
+(setq org-hide-block-startup t)
 
 ;; make inline latex preview crisper
 (setq org-preview-latex-default-process 'dvisvgm)
@@ -1664,6 +1747,22 @@ text and copying to the killring."
 ;; TODO - move to use-package
 (require 'ox-latex)
 
+;; setup for beamer
+(eval-after-load "ox-latex"
+
+  ;; update the list of LaTeX classes and associated header (encoding, etc.)
+  ;; and structure
+  '(add-to-list 'org-latex-classes
+                `("beamer"
+                  ,(concat "\\documentclass[presentation]{beamer}\n"
+                           "[DEFAULT-PACKAGES]"
+                           "[PACKAGES]"
+                           "[EXTRA]\n")
+                  ("\\section{%s}" . "\\section*{%s}")
+                  ("\\subsection{%s}" . "\\subsection*{%s}")
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))))
+
+
 (add-to-list 'org-latex-packages-alist '("" "minted"))
 (setq org-latex-listings 'minted)
 
@@ -1689,8 +1788,14 @@ text and copying to the killring."
 (setq org-export-in-background t)
 (setq org-export-async-init-file (expand-file-name "~/.emacs.d/init_async.el"))
 
+;; help html compile
+(setq org-export-with-broken-links t)
+
 ;; turn on pretty math and greek symbols
 (setq org-pretty-entities t)
+
+;; load some packages required to get id linking working on org export
+;; taken from: https://github.com/jkitchin/org-ref/issues/428
 
 ;;;;;;;;;;;;;
 ;; neotree ;;
@@ -1815,6 +1920,10 @@ text and copying to the killring."
   (setq ivy-initial-inputs-alist nil)
   ;; replace isearch with swiper
   (global-set-key "\C-s" 'swiper)
+  ;; set isearch to wrap lines
+  (setq isearch-lax-whitespace t)
+  (setq isearch-regexp-lax-whitespace t)
+  (setq search-whitespace-regexp "[ \t\r\n]+")
   ;; Gives M-x command counsel features
   ;; NOTE: if smex is installed, counsel-M-x will automatically use it.
   (global-set-key (kbd "M-x") 'counsel-M-x)
@@ -1980,6 +2089,38 @@ text and copying to the killring."
   (interactive)
   (let ((fill-column (point-max)))
     (fill-region (region-beginning) (region-end) nil)))
+
+(defun copy-file-path (&optional @dir-path-only-p)
+  "Copy the current buffer's file path or dired path to `kill-ring'.
+Result is full path.
+If `universal-argument' is called first, copy only the dir path.
+
+If in dired, copy the file/dir cursor is on, or marked files.
+
+If a buffer is not file and not dired, copy value of `default-directory' (which is usually the “current” dir when that buffer was created)
+
+URL `http://ergoemacs.org/emacs/emacs_copy_file_path.html'
+Version 2017-09-01"
+  (interactive "P")
+  (let (($fpath
+         (if (string-equal major-mode 'dired-mode)
+             (progn
+               (let (($result (mapconcat 'identity (dired-get-marked-files) "\n")))
+                 (if (equal (length $result) 0)
+                     (progn default-directory )
+                   (progn $result))))
+           (if (buffer-file-name)
+               (buffer-file-name)
+             (expand-file-name default-directory)))))
+    (kill-new
+     (if @dir-path-only-p
+         (progn
+           (message "Directory path copied: 「%s」" (file-name-directory $fpath))
+           (file-name-directory $fpath))
+       (progn
+         (message "File path copied: 「%s」" $fpath)
+         $fpath )))))
+(global-set-key (kbd "C-c f") 'copy-file-path) ;
 
 
 
@@ -2413,3 +2554,4 @@ text and copying to the killring."
 ;;   )
 
 ;; (define-key ess-r-mode-map (kbd "C-c C-a d") 'anchu/insert-named-comment)
+(put 'dired-find-alternate-file 'disabled nil)

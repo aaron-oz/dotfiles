@@ -1,0 +1,4 @@
+#name : @author ...
+#key : author
+# --
+@author Aaron Osgood-Zimmerman \email{${1:ozimaaron@gmail.com}}

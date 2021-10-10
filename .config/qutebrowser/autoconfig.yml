@@ -8,13 +8,16 @@ config_version: 2
 settings:
   content.geolocation:
     https://www.google.com: false
+    https://www.hulu.com: false
   content.media.audio_capture:
     https://meet.google.com: true
   content.media.video_capture:
     https://meet.google.com: true
-  content.notifications:
+  content.notifications.enabled:
     https://app.slack.com: true
     https://mail.google.com: true
+    https://www.facebook.com: true
+    https://www.netflix.com: true
     https://www.reddit.com: true
   content.pdfjs:
     global: true

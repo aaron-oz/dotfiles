@@ -1,0 +1,4 @@
+#name : proc.time()['elapsed'] - stime
+#key : etime
+# --
+proc.time()['elapsed']$0 - stime

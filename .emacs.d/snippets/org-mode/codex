@@ -1,0 +1,14 @@
+# merms.oz
+# name: org-babel src codex
+# key: codex
+# --
+#+NAME: ${1:$$(yas-choose-value '(" " "fig:" "tab:" "src:"))}${2:name}
+#+BEGIN_SRC ${3:$$(yas-choose-value '("R" "LaTeX" "C++" "emacs-lisp" "sh" "shell" "lisp" "python" "C"))} ${4::async} :exports ${5:$$(yas-choose-value '("none" "results" "code" "both"))} :results ${6:$$(yas-choose-value '("output" "file graphics" "value" "none"))} ${7::file ${8:./img/$2.png}} ${9::width $10 :height $11}
+
+$0
+
+#+END_SRC
+#+CAPTION: $12
+#+NAME: $1$2
+#+ATTR_LATEX: :width 0.75\textwidth
+#+RESULTS: $1$2

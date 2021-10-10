@@ -1,0 +1,4 @@
+#name : stime <- proc.time()['elapsed']
+#key : stime
+# --
+stime <- proc.time()['elapsed']$0
